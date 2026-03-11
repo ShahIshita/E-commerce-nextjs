@@ -44,6 +44,10 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     ...(product.image_url ? [product.image_url] : []),
     ...((images ?? []).map((img) => img.image_url)),
   ]
+  const categoryRelation = Array.isArray(product.categories)
+    ? product.categories[0]
+    : product.categories
+  const categoryName = categoryRelation?.name || 'Uncategorized'
 
   return (
     <div style={{ padding: '2rem', maxWidth: '980px', margin: '0 auto' }}>
@@ -90,7 +94,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
           <h1 style={{ marginBottom: '0.75rem' }}>{product.name}</h1>
 
           <p style={{ color: '#6b7280', marginBottom: '0.75rem' }}>
-            Category: {product.categories?.name || 'Uncategorized'}
+            Category: {categoryName}
           </p>
 
           <p style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: '0.75rem' }}>
