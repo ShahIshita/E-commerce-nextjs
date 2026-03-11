@@ -24,7 +24,7 @@ export default function Navbar({ minimal = false }: NavbarProps) {
         fontSize: '1.5rem', 
         fontWeight: 'bold' 
       }}>
-        E-commerce Store
+        NexCart 
       </Link>
       <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
         {!minimal && (

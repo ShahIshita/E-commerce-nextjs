@@ -9,7 +9,7 @@ export default function Footer() {
       borderTop: '1px solid #e5e7eb'
     }}>
       <p style={{ fontSize: '0.875rem' }}>
-        &copy; {new Date().getFullYear()} E-commerce Store. All rights reserved.
+        &copy; {new Date().getFullYear()} NexCart. All rights reserved.
       </p>
     </footer>
   )
