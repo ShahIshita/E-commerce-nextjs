@@ -19,7 +19,7 @@ export default function Navbar({ minimal = false }: NavbarProps) {
       boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
       borderBottom: '1px solid #e5e7eb'
     }}>
-      <Link href="/products" style={{ 
+      <Link href="/" style={{ 
         color: '#6366f1', 
         textDecoration: 'none', 
         fontSize: '1.5rem', 

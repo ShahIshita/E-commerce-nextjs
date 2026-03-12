@@ -9,7 +9,10 @@ VALUES
   ('11111111-1111-1111-1111-111111111111', 'Electronics', 'Phones, laptops, audio devices, and accessories'),
   ('22222222-2222-2222-2222-222222222222', 'Fashion', 'Clothing, footwear, and daily wear essentials'),
   ('33333333-3333-3333-3333-333333333333', 'Home & Kitchen', 'Home appliances and kitchen utility products'),
-  ('44444444-4444-4444-4444-444444444444', 'Books', 'Fiction, non-fiction, and technical books')
+  ('44444444-4444-4444-4444-444444444444', 'Books', 'Fiction, non-fiction, and technical books'),
+  ('55555555-5555-5555-5555-555555555555', 'Toys', 'Kids toys, games, and learning sets'),
+  ('66666666-6666-6666-6666-666666666666', 'Beauty', 'Skincare, makeup, and grooming products'),
+  ('77777777-7777-7777-7777-777777777777', 'Sports', 'Fitness, training, and sports essentials')
 ON CONFLICT (id) DO UPDATE
 SET
   name = EXCLUDED.name,
@@ -235,6 +238,42 @@ VALUES
     'Wildcraft',
     'Grey',
     '35L'
+  ),
+  (
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa19',
+    'STEM Building Blocks Set',
+    'Creative building blocks toy set for kids with 220 colorful pieces.',
+    29.99,
+    '55555555-5555-5555-5555-555555555555',
+    84,
+    'https://images.unsplash.com/photo-1587654780291-39c9404d746b?w=1200',
+    'FunBrick',
+    'Multicolor',
+    '220 Pieces'
+  ),
+  (
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa20',
+    'Hydra Glow Face Serum',
+    'Niacinamide and hyaluronic acid serum for daily skin hydration.',
+    24.90,
+    '66666666-6666-6666-6666-666666666666',
+    62,
+    'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=1200',
+    'GlowLab',
+    'Transparent',
+    '30ml'
+  ),
+  (
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa21',
+    'Pro Yoga Mat',
+    'Anti-slip 6mm yoga mat for home workouts and studio sessions.',
+    35.50,
+    '77777777-7777-7777-7777-777777777777',
+    40,
+    'https://images.unsplash.com/photo-1599447421386-6f902f0d8c74?w=1200',
+    'FitFlex',
+    'Blue',
+    '6mm'
   )
 ON CONFLICT (id) DO UPDATE
 SET
@@ -345,6 +384,21 @@ VALUES
     'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbb019',
     'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa10',
     'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?w=1200'
+  ),
+  (
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbb020',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa19',
+    'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=1200'
+  ),
+  (
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbb021',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa20',
+    'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=1200'
+  ),
+  (
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbb022',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa21',
+    'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=1200'
   )
 ON CONFLICT (id) DO UPDATE
 SET

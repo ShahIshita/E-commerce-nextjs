@@ -1,466 +1,133 @@
-'use client'
+import Link from 'next/link'
+import { createClient } from '@/lib/supabaseServer'
+import ProductCarousel from '@/components/home/ProductCarousel'
 
-import { useState, useEffect } from 'react'
-import { signUpAction } from '@/lib/authActions'
-import { createSupabaseBrowserClient } from '@/lib/supabaseBrowser'
-import { useRouter } from 'next/navigation'
-import { ButtonLoader } from '@/components/ui/ButtonLoader'
+const HOME_CATEGORIES = [
+  'All',
+  'Books',
+  'Electronics',
+  'Home & Kitchen',
+  'Toys',
+  'Beauty',
+  'Sports',
+]
 
-export default function Home() {
-  const [showLogin, setShowLogin] = useState(false)
-  const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [signupError, setSignupError] = useState<string | null>(null)
-  const [loginError, setLoginError] = useState<string | null>(null)
-  const [signupLoading, setSignupLoading] = useState(false)
-  const [loginLoading, setLoginLoading] = useState(false)
-  const router = useRouter()
-
-  useEffect(() => {
-    const supabase = createSupabaseBrowserClient()
-    
-    // Check if user is already logged in
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const nextUser = session?.user ?? null
-      setUser(nextUser)
-      if (nextUser) {
-        router.replace('/products')
-      }
-      setLoading(false)
-    })
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      const nextUser = session?.user ?? null
-      setUser(nextUser)
-      if (nextUser) {
-        router.replace('/products')
-        setShowLogin(false)
-      }
-    })
-
-    return () => subscription.unsubscribe()
-  }, [router])
-
-  async function handleSignup(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    setSignupLoading(true)
-    setSignupError(null)
-
-    const formData = new FormData(e.currentTarget)
-
-    try {
-      const result = await signUpAction(formData)
-
-      if (result?.error) {
-        setSignupError(result.error)
-        setSignupLoading(false)
-        return // Exit early on error
-      } else {
-        // After successful signup, user is automatically logged in
-        // Refresh the session to update the UI
-        const supabase = createSupabaseBrowserClient()
-        const { data: { session } } = await supabase.auth.getSession()
-        setUser(session?.user ?? null)
-        setSignupLoading(false)
-        // The page will automatically show the welcome message since user is now logged in
-      }
-    } catch (err) {
-      // Handle unexpected errors (network issues, etc.)
-      console.error('Signup error:', err)
-      setSignupError('An unexpected error occurred. Please check your connection and try again.')
-      setSignupLoading(false)
-    }
+function getCategoryHref(label: string, categories: { id: string; name: string }[]) {
+  if (label === 'All') return '/products'
+  const matched = categories.find((category) => category.name.toLowerCase() === label.toLowerCase())
+  if (matched) {
+    return `/products?category=${encodeURIComponent(matched.id)}`
   }
+  return `/products?search=${encodeURIComponent(label)}`
+}
 
-  async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    setLoginLoading(true)
-    setLoginError(null)
+export default async function HomePage() {
+  const supabase = await createClient()
 
-    const formData = new FormData(e.currentTarget)
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
+  const [{ data: categories }, { data: products }] = await Promise.all([
+    supabase.from('categories').select('id, name').order('name', { ascending: true }),
+    supabase
+      .from('products')
+      .select('id, name, price, image_url, category_id')
+      .order('created_at', { ascending: false }),
+  ])
 
-    const supabase = createSupabaseBrowserClient()
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
-    if (authError) {
-      if (authError.message.includes('Invalid login credentials')) {
-        setLoginError('Invalid email or password. Please check your credentials and try again.')
-      } else if (authError.message.includes('Email not confirmed')) {
-        setLoginError('Please check your email and click the confirmation link before logging in.')
-      } else if (authError.message.includes('rate limit') || authError.message.includes('too many')) {
-        setLoginError('Too many login attempts. Please wait a few minutes before trying again.')
-      } else {
-        setLoginError(authError.message)
-      }
-      setLoginLoading(false)
-      return
-    }
-
-    // Client-side sign-in triggers onAuthStateChange - user state and showLogin update via useEffect
-    setLoginLoading(false)
-  }
-
-  if (loading) {
-    return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        minHeight: '60vh' 
-      }}>
-        <div style={{ fontSize: '1.2rem', color: '#6b7280' }}>Loading...</div>
-      </div>
-    )
-  }
-
-  if (user) {
-    return (
-      <div style={{ 
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '60vh'
-      }}>
-        <div style={{ fontSize: '1.1rem', color: '#6b7280' }}>Redirecting to products...</div>
-      </div>
-    )
-  }
+  const list = products ?? []
+  const stillLooking = list.slice(0, 15)
+  const trends = list.slice(7, 22)
+  const lowestPrices = [...list]
+    .sort((a, b) => Number(a.price) - Number(b.price))
+    .slice(0, 15)
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      alignItems: 'center',
-      minHeight: '70vh',
-      padding: '2rem'
-    }}>
-      <div style={{ 
-        maxWidth: '450px', 
-        width: '100%',
-        backgroundColor: '#ffffff',
-        padding: '2.5rem',
-        borderRadius: '12px',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-      }}>
-        <h1 style={{ 
-          fontSize: '2rem', 
-          fontWeight: 'bold', 
-          color: '#1f2937',
-          marginBottom: '0.5rem',
-          textAlign: 'center'
-        }}>
-          Welcome to NexCart store
-        </h1>
-        <p style={{ 
-          textAlign: 'center', 
-          color: '#6b7280',
-          marginBottom: '2rem'
-        }}>
-          {showLogin ? 'Login to your account' : 'Create your account to get started'}
-        </p>
+    <div className="home-page-wrap">
+      <div className="home-page-inner">
+        
+        <form action="/products" method="GET" className="home-search-row">
+          <input
+            name="search"
+            placeholder="Search for Products, Brands and More"
+            className="home-search-input"
+          />
+          <button type="submit" className="home-search-btn">
+            Search
+          </button>
+        </form>
 
-        {!showLogin ? (
-          <>
-            {signupError && (
-              <div style={{
-                padding: '0.875rem',
-                marginBottom: '1.5rem',
-                backgroundColor: '#fef2f2',
-                color: '#dc2626',
-                borderRadius: '8px',
-                border: '1px solid #fecaca',
-                fontSize: '0.875rem'
-              }}>
-                <div style={{ fontWeight: '500', marginBottom: signupError.includes('rate limit') || signupError.includes('too many') || signupError.includes('exceeded') ? '0.5rem' : '0' }}>
-                  {signupError}
-                </div>
-                {(signupError.includes('rate limit') || signupError.includes('too many') || signupError.includes('exceeded')) && (
-                  <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #fecaca' }}>
-                    <p style={{ margin: '0 0 0.5rem 0', fontWeight: '600', fontSize: '0.8rem' }}>💡 What you can do:</p>
-                    <ul style={{ margin: '0', paddingLeft: '1.25rem', fontSize: '0.8rem', lineHeight: '1.6', marginBottom: '0.75rem' }}>
-                      <li>Wait 5-10 minutes before trying again</li>
-                      <li>Check your email inbox and spam folder for confirmation emails</li>
-                      <li>If you already signed up, try logging in instead</li>
-                    </ul>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSignupError(null)
-                        setShowLogin(true)
-                      }}
-                      style={{
-                        width: '100%',
-                        padding: '0.5rem',
-                        backgroundColor: '#6366f1',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '6px',
-                        fontSize: '0.8rem',
-                        fontWeight: '500',
-                        cursor: 'pointer',
-                        transition: 'background-color 0.2s'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#4f46e5'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#6366f1'}
-                    >
-                      Try Logging In Instead →
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
+        <div className="home-category-tabs">
+          {HOME_CATEGORIES.map((label) => (
+            <Link key={label} href={getCategoryHref(label, categories ?? [])} className="home-category-tab">
+              {label}
+            </Link>
+          ))}
+        </div>
 
-            <form onSubmit={handleSignup}>
-              <div style={{ marginBottom: '1.25rem' }}>
-                <label htmlFor="name" style={{ 
-                  display: 'block', 
-                  marginBottom: '0.5rem',
-                  fontWeight: '500',
-                  color: '#374151'
-                }}>
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  required
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    fontSize: '1rem',
-                    transition: 'border-color 0.2s',
-                    outline: 'none'
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = '#6366f1'}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                />
-              </div>
+        <div className="home-banner-strip">
+          <div className="home-banner-card">
+            <img
+              src="https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200"
+              alt="Laptop deals"
+            />
+            <div>
+              <h3>Intel Core Ultra laptops</h3>
+              <p>Top offers on premium models</p>
+            </div>
+          </div>
+          <div className="home-banner-card">
+            <img
+              src="https://images.unsplash.com/photo-1586201375761-83865001e31c?w=1200"
+              alt="Appliance deals"
+            />
+            <div>
+              <h3>Home appliances</h3>
+              <p>Bank offers and cashback</p>
+            </div>
+          </div>
+          <div className="home-banner-card">
+            <img
+              src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=1200"
+              alt="Audio deals"
+            />
+            <div>
+              <h3>Audio series from $39</h3>
+              <p>Headphones and speakers</p>
+            </div>
+          </div>
+        </div>
 
-              <div style={{ marginBottom: '1.25rem' }}>
-                <label htmlFor="email" style={{ 
-                  display: 'block', 
-                  marginBottom: '0.5rem',
-                  fontWeight: '500',
-                  color: '#374151'
-                }}>
-                  Email
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  required
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    fontSize: '1rem',
-                    transition: 'border-color 0.2s',
-                    outline: 'none'
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = '#6366f1'}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                />
-              </div>
+        <ProductCarousel
+          products={stillLooking.map((p) => ({
+            id: p.id,
+            name: p.name,
+            price: Number(p.price),
+            image_url: p.image_url,
+            category_id: p.category_id ?? undefined,
+          }))}
+          title="Still looking for these?"
+        />
 
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label htmlFor="password" style={{ 
-                  display: 'block', 
-                  marginBottom: '0.5rem',
-                  fontWeight: '500',
-                  color: '#374151'
-                }}>
-                  Password
-                </label>
-                <input
-                  type="password"
-                  id="password"
-                  name="password"
-                  required
-                  minLength={6}
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    fontSize: '1rem',
-                    transition: 'border-color 0.2s',
-                    outline: 'none'
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = '#6366f1'}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                />
-              </div>
+        <ProductCarousel
+          products={trends.map((p) => ({
+            id: p.id,
+            name: p.name,
+            price: Number(p.price),
+            image_url: p.image_url,
+            category_id: p.category_id ?? undefined,
+          }))}
+          title="Trends you may like"
+        />
 
-              <button
-                type="submit"
-                disabled={signupLoading}
-                style={{
-                  width: '100%',
-                  padding: '0.875rem',
-                  backgroundColor: signupLoading ? '#9ca3af' : '#6366f1',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '1rem',
-                  fontWeight: '600',
-                  cursor: signupLoading ? 'not-allowed' : 'pointer',
-                  transition: 'background-color 0.2s',
-                  marginBottom: '1rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.5rem'
-                }}
-                onMouseEnter={(e) => {
-                  if (!signupLoading) e.currentTarget.style.backgroundColor = '#4f46e5'
-                }}
-                onMouseLeave={(e) => {
-                  if (!signupLoading) e.currentTarget.style.backgroundColor = '#6366f1'
-                }}
-              >
-                {signupLoading && <ButtonLoader />}
-                {signupLoading ? 'Creating account...' : 'Sign Up'}
-              </button>
-            </form>
-          </>
-        ) : (
-          <>
-            {loginError && (
-              <div style={{
-                padding: '0.875rem',
-                marginBottom: '1.5rem',
-                backgroundColor: '#fef2f2',
-                color: '#dc2626',
-                borderRadius: '8px',
-                border: '1px solid #fecaca',
-                fontSize: '0.875rem'
-              }}>
-                {loginError}
-              </div>
-            )}
-
-            <form onSubmit={handleLogin}>
-              <div style={{ marginBottom: '1.25rem' }}>
-                <label htmlFor="login-email" style={{ 
-                  display: 'block', 
-                  marginBottom: '0.5rem',
-                  fontWeight: '500',
-                  color: '#374151'
-                }}>
-                  Email
-                </label>
-                <input
-                  type="email"
-                  id="login-email"
-                  name="email"
-                  required
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    fontSize: '1rem',
-                    transition: 'border-color 0.2s',
-                    outline: 'none'
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = '#6366f1'}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                />
-              </div>
-
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label htmlFor="login-password" style={{ 
-                  display: 'block', 
-                  marginBottom: '0.5rem',
-                  fontWeight: '500',
-                  color: '#374151'
-                }}>
-                  Password
-                </label>
-                <input
-                  type="password"
-                  id="login-password"
-                  name="password"
-                  required
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    fontSize: '1rem',
-                    transition: 'border-color 0.2s',
-                    outline: 'none'
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = '#6366f1'}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={loginLoading}
-                style={{
-                  width: '100%',
-                  padding: '0.875rem',
-                  backgroundColor: loginLoading ? '#9ca3af' : '#6366f1',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '1rem',
-                  fontWeight: '600',
-                  cursor: loginLoading ? 'not-allowed' : 'pointer',
-                  transition: 'background-color 0.2s',
-                  marginBottom: '1rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.5rem'
-                }}
-                onMouseEnter={(e) => {
-                  if (!loginLoading) e.currentTarget.style.backgroundColor = '#4f46e5'
-                }}
-                onMouseLeave={(e) => {
-                  if (!loginLoading) e.currentTarget.style.backgroundColor = '#6366f1'
-                }}
-              >
-                {loginLoading && <ButtonLoader />}
-                {loginLoading ? 'Logging in...' : 'Login'}
-              </button>
-            </form>
-
-            <button
-              onClick={() => setShowLogin(false)}
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                backgroundColor: 'transparent',
-                color: '#6366f1',
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px',
-                fontSize: '0.875rem',
-                cursor: 'pointer',
-                transition: 'background-color 0.2s'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f7fa'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-            >
-              Back to Sign Up
-            </button>
-          </>
-        )}
+        <ProductCarousel
+          products={lowestPrices.map((p) => ({
+            id: p.id,
+            name: p.name,
+            price: Number(p.price),
+            image_url: p.image_url,
+            category_id: p.category_id ?? undefined,
+          }))}
+          title="Lowest prices in the year"
+          showPrice
+        />
       </div>
     </div>
   )
