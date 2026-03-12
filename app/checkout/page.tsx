@@ -3,7 +3,11 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabaseServer'
 
-export default async function CheckoutPage() {
+type CheckoutPageProps = {
+  searchParams?: Record<string, string | string[] | undefined>
+}
+
+export default async function CheckoutPage({ searchParams }: CheckoutPageProps) {
   const user = await getUser()
   const supabase = await createClient()
 
@@ -49,7 +53,12 @@ export default async function CheckoutPage() {
     }))
   }
 
-  const total = (items ?? []).reduce(
+  const buyNowProductId = (searchParams?.buyNow as string) || ''
+  const checkoutItems = buyNowProductId
+    ? (items ?? []).filter((item) => item.products?.id === buyNowProductId)
+    : (items ?? [])
+
+  const total = checkoutItems.reduce(
     (sum, item) => sum + Number(item.products?.price ?? 0) * item.quantity,
     0
   )
@@ -59,7 +68,7 @@ export default async function CheckoutPage() {
       <h1>Checkout</h1>
       <p style={{ color: '#6b7280', marginBottom: '1rem' }}>Welcome, {user.email}</p>
 
-      {(!items || items.length === 0) && (
+      {checkoutItems.length === 0 && (
         <div style={{ border: '1px solid #e5e7eb', borderRadius: '8px', backgroundColor: '#fff', padding: '1rem' }}>
           <p style={{ marginBottom: '0.6rem' }}>No items in cart for checkout.</p>
           <Link href="/products" style={{ color: '#2563eb', textDecoration: 'underline' }}>
@@ -68,10 +77,10 @@ export default async function CheckoutPage() {
         </div>
       )}
 
-      {items && items.length > 0 && (
+      {checkoutItems.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '1rem' }}>
           <div style={{ display: 'grid', gap: '0.75rem' }}>
-            {items.map((item) => {
+            {checkoutItems.map((item) => {
               const product = item.products
               return (
                 <div
@@ -120,7 +129,7 @@ export default async function CheckoutPage() {
             }}
           >
             <h3 style={{ marginBottom: '0.8rem' }}>Payment Summary</h3>
-            <p style={{ marginBottom: '0.5rem' }}>Items: {items.length}</p>
+            <p style={{ marginBottom: '0.5rem' }}>Items: {checkoutItems.length}</p>
             <p style={{ marginBottom: '0.8rem' }}>
               Total: <strong>${total.toFixed(2)}</strong>
             </p>

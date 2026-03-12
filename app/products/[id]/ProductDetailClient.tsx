@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Heart, Link as LinkIcon, Mail, MessageCircle, MessageSquare, Share2, X } from 'lucide-react'
 import { ButtonLoader } from '@/components/ui/ButtonLoader'
-import { addProductToCart, isProductInCart, replaceCartWithSingleProduct } from '@/lib/cartClient'
+import { addProductToCart, isProductInCart } from '@/lib/cartClient'
 import { useWishlist } from '@/components/WishlistProvider'
 
 type ProductDetailClientProps = {
@@ -116,9 +116,7 @@ export default function ProductDetailClient({
       return
     }
     setBusyAction(redirectToCheckout ? 'buy' : 'add')
-    const result = redirectToCheckout
-      ? await replaceCartWithSingleProduct(productId, selectedSize || null)
-      : await addProductToCart(productId, 1, selectedSize || null)
+    const result = await addProductToCart(productId, 1, selectedSize || null)
     setBusyAction(null)
 
     if ('error' in result && result.error === 'AUTH_REQUIRED') {
@@ -132,7 +130,7 @@ export default function ProductDetailClient({
 
     setInCart(true)
     if (redirectToCheckout) {
-      router.push('/checkout')
+      router.push(`/checkout?buyNow=${encodeURIComponent(productId)}`)
       return
     }
   }
@@ -235,18 +233,6 @@ export default function ProductDetailClient({
                 {size}
               </button>
             ))}
-          </div>
-          <div
-            style={{
-              marginTop: '0.6rem',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              padding: '0.55rem',
-              fontSize: '0.85rem',
-              color: '#4b5563',
-            }}
-          >
-            <strong>Size chart:</strong> S (36), M (38), L (40), XL (42), XXL (44), 3XL (46)
           </div>
           {selectedSize && (
             <p style={{ marginTop: '0.45rem', fontSize: '0.85rem', color: '#374151' }}>
@@ -425,6 +411,9 @@ export default function ProductDetailClient({
             </div>
 
             <div style={{ padding: '0.95rem', overflowX: 'auto' }}>
+              <p style={{ marginBottom: '0.65rem', color: '#374151', fontSize: '0.95rem' }}>
+                <strong>Size chart:</strong> S (36), M (38), L (40), XL (42), XXL (44), 3XL (46)
+              </p>
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '680px' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#f3f4f6' }}>
