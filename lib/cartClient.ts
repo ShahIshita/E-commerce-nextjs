@@ -50,7 +50,11 @@ export async function getOrCreateCartId(): Promise<{ cartId?: string; error?: st
   return { cartId: createdCart.id }
 }
 
-export async function addProductToCart(productId: string, quantity = 1): Promise<CartResult> {
+export async function addProductToCart(
+  productId: string,
+  quantity = 1,
+  selectedSize?: string | null
+): Promise<CartResult> {
   const cartResult = await getOrCreateCartId()
   if (cartResult.error) {
     return { error: cartResult.error as 'AUTH_REQUIRED' | string }
@@ -74,9 +78,16 @@ export async function addProductToCart(productId: string, quantity = 1): Promise
   }
 
   if (existingItem) {
+    const nextPayload: { quantity: number; selected_size?: string } = {
+      quantity: existingItem.quantity + quantity,
+    }
+    if (selectedSize) {
+      nextPayload.selected_size = selectedSize
+    }
+
     const { error: updateError } = await supabase
       .from('cart_items')
-      .update({ quantity: existingItem.quantity + quantity })
+      .update(nextPayload)
       .eq('id', existingItem.id)
 
     if (updateError) {
@@ -88,8 +99,68 @@ export async function addProductToCart(productId: string, quantity = 1): Promise
 
   const { error: insertError } = await supabase
     .from('cart_items')
-    .insert({ cart_id: cartId, product_id: productId, quantity })
+    .insert({
+      cart_id: cartId,
+      product_id: productId,
+      quantity,
+      selected_size: selectedSize ?? null,
+    })
 
+  if (insertError) {
+    return { error: insertError.message }
+  }
+
+  emitCartChanged()
+  return { success: true }
+}
+
+export async function isProductInCart(productId: string): Promise<boolean> {
+  const cartResult = await getOrCreateCartId()
+  if (cartResult.error || !cartResult.cartId) {
+    return false
+  }
+
+  const supabase = createSupabaseBrowserClient()
+  const { data, error } = await supabase
+    .from('cart_items')
+    .select('id')
+    .eq('cart_id', cartResult.cartId)
+    .eq('product_id', productId)
+    .maybeSingle()
+
+  if (error) {
+    return false
+  }
+
+  return Boolean(data?.id)
+}
+
+export async function replaceCartWithSingleProduct(
+  productId: string,
+  selectedSize?: string | null
+): Promise<CartResult> {
+  const cartResult = await getOrCreateCartId()
+  if (cartResult.error) {
+    return { error: cartResult.error as 'AUTH_REQUIRED' | string }
+  }
+  const cartId = cartResult.cartId
+  if (!cartId) {
+    return { error: 'Cart not found' }
+  }
+
+  const supabase = createSupabaseBrowserClient()
+
+  const { error: deleteError } = await supabase.from('cart_items').delete().eq('cart_id', cartId)
+  if (deleteError) {
+    return { error: deleteError.message }
+  }
+
+  const { error: insertError } = await supabase.from('cart_items').insert({
+    cart_id: cartId,
+    product_id: productId,
+    quantity: 1,
+    selected_size: selectedSize ?? null,
+  })
   if (insertError) {
     return { error: insertError.message }
   }

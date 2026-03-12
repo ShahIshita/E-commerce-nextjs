@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabaseServer'
 import ProductDetailClient from './ProductDetailClient'
+import ProductImageGallery from './ProductImageGallery'
 
 type ProductDetailPageProps = {
   params: {
@@ -44,10 +45,12 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     .select('id, image_url')
     .eq('product_id', product.id)
 
-  const gallery = [
+  const gallery = Array.from(
+    new Set([
     ...(product.image_url ? [product.image_url] : []),
     ...((images ?? []).map((img) => img.image_url)),
-  ]
+    ])
+  )
   const categoryRelation = Array.isArray(product.categories)
     ? product.categories[0]
     : product.categories
@@ -73,26 +76,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
           padding: '1.25rem',
         }}
       >
-        <div>
-          <img
-            src={gallery[0] || 'https://via.placeholder.com/800x500?text=No+Image'}
-            alt={product.name}
-            style={{ width: '100%', height: '360px', objectFit: 'cover', borderRadius: '8px' }}
-          />
-
-          {gallery.length > 1 && (
-            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
-              {gallery.slice(1).map((imageUrl, idx) => (
-                <img
-                  key={`${imageUrl}-${idx}`}
-                  src={imageUrl}
-                  alt={`${product.name} ${idx + 2}`}
-                  style={{ width: '92px', height: '72px', objectFit: 'cover', borderRadius: '6px' }}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+        <ProductImageGallery productName={product.name} images={gallery} />
 
         <div>
           <h1 style={{ marginBottom: '0.75rem' }}>{product.name}</h1>

@@ -8,6 +8,7 @@ import { ButtonLoader } from '@/components/ui/ButtonLoader'
 type CartItemRow = {
   id: string
   quantity: number
+  selected_size: string | null
   products:
     | {
         id: string
@@ -27,6 +28,7 @@ type CartItemRow = {
 type NormalizedCartItemRow = {
   id: string
   quantity: number
+  selected_size: string | null
   products: {
     id: string
     name: string
@@ -88,6 +90,7 @@ export default function CartClient({ userId }: CartClientProps) {
         `
         id,
         quantity,
+        selected_size,
         products (
           id,
           name,
@@ -222,6 +225,11 @@ export default function CartClient({ userId }: CartClientProps) {
                   )}
                 </h3>
                 <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>${price.toFixed(2)} each</p>
+                {item.selected_size && (
+                  <p style={{ color: '#374151', fontSize: '0.85rem' }}>
+                    Size: <strong>{item.selected_size}</strong>
+                  </p>
+                )}
                 {product?.id && (
                   <Link
                     href={`/products/${product.id}`}
