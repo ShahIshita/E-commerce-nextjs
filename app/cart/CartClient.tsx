@@ -142,6 +142,7 @@ export default function CartClient({ userId }: CartClientProps) {
     setItems((prev) =>
       prev.map((item) => (item.id === itemId ? { ...item, quantity: nextQuantity } : item))
     )
+    window.dispatchEvent(new Event('cart:changed'))
   }
 
   async function removeItem(itemId: string) {
@@ -153,6 +154,7 @@ export default function CartClient({ userId }: CartClientProps) {
       return
     }
     setItems((prev) => prev.filter((item) => item.id !== itemId))
+    window.dispatchEvent(new Event('cart:changed'))
   }
 
   const total = useMemo(
@@ -211,9 +213,23 @@ export default function CartClient({ userId }: CartClientProps) {
               />
               <div>
                 <h3 style={{ marginBottom: '0.25rem', fontSize: '1rem' }}>
-                  {product?.name || 'Unavailable Product'}
+                  {product?.id ? (
+                    <Link href={`/products/${product.id}`} style={{ color: '#111827', textDecoration: 'none' }}>
+                      {product?.name || 'Unavailable Product'}
+                    </Link>
+                  ) : (
+                    product?.name || 'Unavailable Product'
+                  )}
                 </h3>
                 <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>${price.toFixed(2)} each</p>
+                {product?.id && (
+                  <Link
+                    href={`/products/${product.id}`}
+                    style={{ fontSize: '0.85rem', color: '#2563eb', textDecoration: 'underline' }}
+                  >
+                    View product details
+                  </Link>
+                )}
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div

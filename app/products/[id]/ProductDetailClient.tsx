@@ -2,8 +2,10 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Heart } from 'lucide-react'
 import { ButtonLoader } from '@/components/ui/ButtonLoader'
 import { addProductToCart } from '@/lib/cartClient'
+import { useWishlist } from '@/components/WishlistProvider'
 
 type ProductDetailClientProps = {
   productId: string
@@ -21,19 +23,22 @@ export default function ProductDetailClient({
   sizeValue,
 }: ProductDetailClientProps) {
   const router = useRouter()
-  const [quantity, setQuantity] = useState(1)
+  const { isInWishlist, toggleWishlist } = useWishlist()
   const [busyAction, setBusyAction] = useState<'add' | 'buy' | null>(null)
+  const liked = isInWishlist(productId)
 
   const isOutOfStock = stockQuantity <= 0
   const normalizedCategory = categoryName.toLowerCase()
   const isClothing =
     normalizedCategory.includes('cloth') ||
     normalizedCategory.includes('fashion') ||
-    normalizedCategory.includes('wear') ||
     normalizedCategory.includes('apparel') ||
+    normalizedCategory.includes('women') ||
+    normalizedCategory.includes('men') ||
+    normalizedCategory.includes('kids') ||
+    normalizedCategory.includes('ethnic') ||
     normalizedCategory.includes('top') ||
-    normalizedCategory.includes('shirt') ||
-    Boolean(sizeValue)
+    normalizedCategory.includes('shirt')
 
   const availableSizes = useMemo(() => {
     const parsed = (sizeValue ?? '')
@@ -50,7 +55,7 @@ export default function ProductDetailClient({
   async function handleAddToCart(redirectToCheckout: boolean) {
     if (isOutOfStock) return
     setBusyAction(redirectToCheckout ? 'buy' : 'add')
-    const result = await addProductToCart(productId, quantity)
+    const result = await addProductToCart(productId, 1)
     setBusyAction(null)
 
     if ('error' in result && result.error === 'AUTH_REQUIRED') {
@@ -71,6 +76,27 @@ export default function ProductDetailClient({
 
   return (
     <div style={{ marginTop: '1.1rem' }}>
+      <button
+        type="button"
+        aria-label={liked ? 'Remove from wishlist' : 'Add to wishlist'}
+        onClick={() => toggleWishlist(productId)}
+        style={{
+          marginBottom: '0.8rem',
+          border: '1px solid #e5e7eb',
+          borderRadius: '999px',
+          backgroundColor: '#fff',
+          color: '#111827',
+          padding: '0.45rem 0.75rem',
+          cursor: 'pointer',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.4rem',
+        }}
+      >
+        <Heart size={16} color={liked ? '#ef4444' : '#6b7280'} fill={liked ? '#ef4444' : 'transparent'} />
+        {liked ? 'Added to Favourite' : 'Add to Favourite'}
+      </button>
+
       {isClothing && (
         <div style={{ marginBottom: '1rem' }}>
           <p style={{ marginBottom: '0.45rem', fontWeight: 600 }}>
@@ -112,39 +138,19 @@ export default function ProductDetailClient({
         </div>
       )}
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.8rem' }}>
-        <span style={{ fontWeight: 600 }}>Qty</span>
-        <button
-          type="button"
-          onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
-          disabled={isOutOfStock || busyAction !== null}
-          style={{
-            width: '32px',
-            height: '32px',
-            border: '1px solid #d1d5db',
-            borderRadius: '8px',
-            backgroundColor: '#fff',
-            cursor: 'pointer',
-          }}
-        >
-          -
-        </button>
-        <span style={{ minWidth: '24px', textAlign: 'center' }}>{quantity}</span>
-        <button
-          type="button"
-          onClick={() => setQuantity((prev) => Math.min(Math.max(1, stockQuantity), prev + 1))}
-          disabled={isOutOfStock || busyAction !== null || quantity >= stockQuantity}
-          style={{
-            width: '32px',
-            height: '32px',
-            border: '1px solid #d1d5db',
-            borderRadius: '8px',
-            backgroundColor: '#fff',
-            cursor: 'pointer',
-          }}
-        >
-          +
-        </button>
+      <div
+        style={{
+          marginBottom: '0.85rem',
+          border: '1px solid #e5e7eb',
+          borderRadius: '8px',
+          backgroundColor: '#fff',
+          padding: '0.7rem',
+        }}
+      >
+        <p style={{ fontSize: '0.9rem', marginBottom: '0.35rem', color: '#111827' }}>
+          7 days return policy
+        </p>
+        <p style={{ fontSize: '0.9rem', color: '#111827' }}>Cash on delivery available</p>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>

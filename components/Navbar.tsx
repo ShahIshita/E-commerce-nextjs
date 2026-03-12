@@ -28,19 +28,6 @@ export default function Navbar({ minimal = false }: NavbarProps) {
         NexCart 
       </Link>
       <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
-        {!minimal && (
-          <Link href="/products" style={{ 
-            color: '#374151', 
-            textDecoration: 'none',
-            fontWeight: '500',
-            transition: 'color 0.2s'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.color = '#6366f1'}
-          onMouseLeave={(e) => e.currentTarget.style.color = '#374151'}
-          >
-            Products
-          </Link>
-        )}
         {!minimal && <NavbarIcons />}
         <AuthButton minimal={minimal} />
       </div>

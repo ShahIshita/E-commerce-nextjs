@@ -7,6 +7,12 @@ type CartResult =
   | { error: string }
   | { error: 'AUTH_REQUIRED' }
 
+function emitCartChanged() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('cart:changed'))
+  }
+}
+
 export async function getOrCreateCartId(): Promise<{ cartId?: string; error?: string }> {
   const supabase = createSupabaseBrowserClient()
   const {
@@ -76,6 +82,7 @@ export async function addProductToCart(productId: string, quantity = 1): Promise
     if (updateError) {
       return { error: updateError.message }
     }
+    emitCartChanged()
     return { success: true }
   }
 
@@ -87,5 +94,6 @@ export async function addProductToCart(productId: string, quantity = 1): Promise
     return { error: insertError.message }
   }
 
+  emitCartChanged()
   return { success: true }
 }
