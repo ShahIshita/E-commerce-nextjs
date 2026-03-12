@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabaseServer'
+import PriceRangeSlider from '@/components/products/PriceRangeSlider'
+import ProductCard from '@/components/products/ProductCard'
 
 type ProductsPageProps = {
   searchParams?: Record<string, string | string[] | undefined>
@@ -41,7 +43,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
 
   let facetsBaseQuery = supabase
     .from('products')
-    .select('brand, color, size')
+    .select('brand, color, size, price')
     .order('created_at', { ascending: false })
 
   if (selectedCategoryId) {
@@ -55,6 +57,11 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   const brandOptions = Array.from(new Set((facetProducts ?? []).map((p) => p.brand).filter(Boolean))) as string[]
   const colorOptions = Array.from(new Set((facetProducts ?? []).map((p) => p.color).filter(Boolean))) as string[]
   const sizeOptions = Array.from(new Set((facetProducts ?? []).map((p) => p.size).filter(Boolean))) as string[]
+  const prices = (facetProducts ?? [])
+    .map((p) => Number(p.price))
+    .filter((price) => Number.isFinite(price))
+  const minAvailablePrice = prices.length > 0 ? Math.floor(Math.min(...prices)) : 0
+  const maxAvailablePrice = prices.length > 0 ? Math.ceil(Math.max(...prices)) : 1000
 
   let productsQuery = supabase
     .from('products')
@@ -203,29 +210,15 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
           <form key={`filters-${filterStateKey}`} action="/products" method="GET">
             <input type="hidden" name="search" value={searchTerm} />
             <input type="hidden" name="category" value={selectedCategoryId} />
-            {minPrice > 0 && <input type="hidden" name="minPrice" value={minPrice} />}
-            {maxPrice > 0 && <input type="hidden" name="maxPrice" value={maxPrice} />}
 
             <details open style={{ marginBottom: '0.75rem' }}>
               <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Price Range</summary>
-              <div style={{ marginTop: '0.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                <input
-                  type="number"
-                  name="minPrice"
-                  defaultValue={minPrice || ''}
-                  placeholder="Min"
-                  min={0}
-                  style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '6px' }}
-                />
-                <input
-                  type="number"
-                  name="maxPrice"
-                  defaultValue={maxPrice || ''}
-                  placeholder="Max"
-                  min={0}
-                  style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '6px' }}
-                />
-              </div>
+              <PriceRangeSlider
+                minBound={minAvailablePrice}
+                maxBound={maxAvailablePrice}
+                selectedMin={minPrice}
+                selectedMax={maxPrice}
+              />
             </details>
 
             <details open style={{ marginBottom: '0.75rem' }}>
@@ -325,41 +318,20 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         }}
       >
         {(products ?? []).map((product) => (
-          <Link
+          <ProductCard
             key={product.id}
-            href={`/products/${product.id}`}
-            style={{
-              textDecoration: 'none',
-              color: 'inherit',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              padding: '1rem',
-              backgroundColor: '#fff',
+            product={{
+              id: product.id,
+              name: product.name,
+              description: product.description,
+              price: Number(product.price),
+              stock_quantity: product.stock_quantity,
+              image_url: product.image_url,
+              brand: product.brand,
+              color: product.color,
+              size: product.size,
             }}
-          >
-            <img
-              src={product.image_url || 'https://via.placeholder.com/400x250?text=No+Image'}
-              alt={product.name}
-              style={{
-                width: '100%',
-                height: '160px',
-                objectFit: 'cover',
-                borderRadius: '6px',
-                marginBottom: '0.75rem',
-              }}
-            />
-            <h3 style={{ marginBottom: '0.5rem' }}>{product.name}</h3>
-            <p style={{ fontSize: '0.9rem', color: '#6b7280', marginBottom: '0.75rem' }}>
-              {product.description || 'No description available'}
-            </p>
-            <p style={{ fontSize: '0.85rem', color: '#4b5563', marginBottom: '0.25rem' }}>
-              {product.brand || 'No brand'} {product.color ? `• ${product.color}` : ''} {product.size ? `• ${product.size}` : ''}
-            </p>
-            <p style={{ fontWeight: 600, marginBottom: '0.25rem' }}>${Number(product.price).toFixed(2)}</p>
-            <p style={{ fontSize: '0.85rem', color: '#4b5563' }}>
-              Stock: {product.stock_quantity}
-            </p>
-          </Link>
+          />
         ))}
       </div>
         </div>

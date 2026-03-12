@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import NavbarWrapper from '@/components/NavbarWrapper'
 import Footer from '@/components/Footer'
+import { WishlistProvider } from '@/components/WishlistProvider'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -20,9 +21,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <NavbarWrapper />
-        <main>{children}</main>
-        <Footer />
+        <WishlistProvider>
+          <NavbarWrapper />
+          <main>{children}</main>
+          <Footer />
+        </WishlistProvider>
       </body>
     </html>
   )

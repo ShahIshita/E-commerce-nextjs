@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import AuthButton from './AuthButton'
+import NavbarIcons from './NavbarIcons'
 
 interface NavbarProps {
   /** When true, show minimal navbar (Store + Login/Signup only) - used on auth pages */
@@ -40,6 +41,7 @@ export default function Navbar({ minimal = false }: NavbarProps) {
             Products
           </Link>
         )}
+        {!minimal && <NavbarIcons />}
         <AuthButton minimal={minimal} />
       </div>
     </nav>
