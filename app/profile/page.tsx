@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createSupabaseBrowserClient } from '@/lib/supabaseBrowser'
 import Toast from '@/components/Toast'
+import AddressSection from './AddressSection'
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -265,6 +266,10 @@ export default function ProfilePage() {
         visible={showToast}
         onClose={handleToastClose}
       />
+
+      <div style={{ marginTop: '2rem' }}>
+        <AddressSection userId={user.id} />
+      </div>
 
       <div style={{ marginTop: '1.5rem' }}>
         <Link

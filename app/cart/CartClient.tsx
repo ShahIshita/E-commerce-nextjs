@@ -37,6 +37,8 @@ type NormalizedCartItemRow = {
   } | null
 }
 
+type AddressOption = { id: string; address_line: string; city: string; state: string; postal_code: string; country: string; is_default: boolean }
+
 type CartClientProps = {
   userId: string
 }
@@ -44,6 +46,8 @@ type CartClientProps = {
 export default function CartClient({ userId }: CartClientProps) {
   const [cartId, setCartId] = useState<string | null>(null)
   const [items, setItems] = useState<NormalizedCartItemRow[]>([])
+  const [addresses, setAddresses] = useState<AddressOption[]>([])
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [busyItemId, setBusyItemId] = useState<string | null>(null)
 
@@ -124,9 +128,28 @@ export default function CartClient({ userId }: CartClientProps) {
     setLoading(false)
   }, [supabase, userId])
 
+  const loadAddresses = useCallback(async () => {
+    const { data } = await supabase
+      .from('addresses')
+      .select('id, address_line, city, state, postal_code, country, is_default')
+      .eq('user_id', userId)
+      .order('is_default', { ascending: false })
+    const list = (data ?? []) as AddressOption[]
+    setAddresses(list)
+    if (list.length > 0) {
+      setSelectedAddressId((prev) =>
+        prev && list.some((a) => a.id === prev) ? prev : list.find((a) => a.is_default)?.id ?? list[0].id
+      )
+    }
+  }, [supabase, userId])
+
   useEffect(() => {
     loadCart()
   }, [loadCart])
+
+  useEffect(() => {
+    loadAddresses()
+  }, [loadAddresses])
 
   async function updateQuantity(itemId: string, nextQuantity: number) {
     if (nextQuantity <= 0) {
@@ -315,12 +338,40 @@ export default function CartClient({ userId }: CartClientProps) {
         }}
       >
         <h3 style={{ marginBottom: '0.8rem' }}>Order Summary</h3>
+        {addresses.length > 0 && (
+          <div style={{ marginBottom: '0.75rem' }}>
+            <label htmlFor="cart-address-select" style={{ display: 'block', fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.25rem' }}>Deliver to</label>
+            <select
+              id="cart-address-select"
+              value={selectedAddressId ?? ''}
+              onChange={(e) => setSelectedAddressId(e.target.value || null)}
+              style={{
+                width: '100%',
+                padding: '0.5rem',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                fontSize: '0.9rem',
+              }}
+            >
+              {addresses.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.address_line}, {a.city}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        {addresses.length === 0 && (
+          <p style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '0.5rem' }}>
+            <Link href="/profile" style={{ color: '#2563eb' }}>Add address</Link> for checkout.
+          </p>
+        )}
         <p style={{ marginBottom: '0.5rem' }}>Items: {items.length}</p>
         <p style={{ marginBottom: '0.8rem' }}>
           Total: <strong>${total.toFixed(2)}</strong>
         </p>
         <Link
-          href="/checkout"
+          href={selectedAddressId ? `/checkout?addressId=${encodeURIComponent(selectedAddressId)}` : '/checkout'}
           style={{
             display: 'inline-block',
             width: '100%',

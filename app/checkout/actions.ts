@@ -11,8 +11,12 @@ export type PlaceOrderResult =
 /**
  * Creates an order from current cart items, then clears those items from the cart.
  * If buyNowProductId is set, only that product's cart line is converted; otherwise all cart items.
+ * addressId is optional; if provided and valid for user, it is saved on the order.
  */
-export async function placeOrder(buyNowProductId?: string | null): Promise<PlaceOrderResult> {
+export async function placeOrder(
+  buyNowProductId?: string | null,
+  addressId?: string | null
+): Promise<PlaceOrderResult> {
   const user = await getUser()
   if (!user) {
     redirect('/auth/login')
@@ -90,14 +94,20 @@ export async function placeOrder(buyNowProductId?: string | null): Promise<Place
     return { success: false, error: 'No valid items to order' }
   }
 
+  const orderPayload: { user_id: string; total_price: number; status: string; payment_status: string; address_id?: string } = {
+    user_id: user.id,
+    total_price: totalPrice,
+    status: 'placed',
+    payment_status: 'pending',
+  }
+  if (addressId) {
+    const { data: addr } = await supabase.from('addresses').select('id').eq('id', addressId).eq('user_id', user.id).single()
+    if (addr?.id) orderPayload.address_id = addressId
+  }
+
   const { data: order, error: orderError } = await supabase
     .from('orders')
-    .insert({
-      user_id: user.id,
-      total_price: totalPrice,
-      status: 'placed',
-      payment_status: 'pending',
-    })
+    .insert(orderPayload)
     .select('id')
     .single()
 

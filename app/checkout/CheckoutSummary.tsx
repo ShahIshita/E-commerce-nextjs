@@ -10,12 +10,14 @@ type CheckoutSummaryProps = {
   total: number
   itemCount: number
   buyNowProductId: string | null
+  addressId?: string | null
 }
 
 export default function CheckoutSummary({
   total,
   itemCount,
   buyNowProductId,
+  addressId = null,
 }: CheckoutSummaryProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -25,7 +27,7 @@ export default function CheckoutSummary({
     setError(null)
     setLoading(true)
     try {
-      const result = await placeOrder(buyNowProductId || undefined)
+      const result = await placeOrder(buyNowProductId || undefined, addressId || undefined)
       if (result.success) {
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new Event('cart:changed'))

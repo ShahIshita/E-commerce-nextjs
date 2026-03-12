@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabaseServer'
 import CheckoutSummary from './CheckoutSummary'
+import CheckoutAddressSelect from './CheckoutAddressSelect'
 
 type CheckoutPageProps = {
   searchParams?: Record<string, string | string[] | undefined>
@@ -55,6 +56,17 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
   }
 
   const buyNowProductId = (searchParams?.buyNow as string) || ''
+  const addressIdParam = (searchParams?.addressId as string) || ''
+
+  const { data: addressesData } = await supabase
+    .from('addresses')
+    .select('id, address_line, city, state, postal_code, country, is_default')
+    .eq('user_id', user.id)
+    .order('is_default', { ascending: false })
+  type AddressRow = { id: string; address_line: string; city: string; state: string; postal_code: string; country: string; is_default: boolean }
+  const addresses = (addressesData ?? []) as AddressRow[]
+  const selectedAddressId = addressIdParam && addresses.some((a) => a.id === addressIdParam) ? addressIdParam : (addresses.find((a) => a.is_default)?.id ?? addresses[0]?.id ?? null)
+
   const checkoutItems = buyNowProductId
     ? (items ?? []).filter((item) => item.products?.id === buyNowProductId)
     : (items ?? [])
@@ -97,25 +109,13 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
         {checkoutItems.length > 0 && (
           <div className="checkout-layout-new">
             <div className="checkout-left">
-              <div className="checkout-delivery-card">
-                <h3>Deliver to</h3>
-                <div className="checkout-delivery-row">
-                  <span className="checkout-delivery-name">
-                    {userName}
-                    <span style={{ marginLeft: '0.5rem', color: '#6b7280', fontWeight: 400 }}>
-                      {user.email}
-                    </span>
-                  </span>
-                  <span className="checkout-delivery-tag">HOME</span>
-                </div>
-                <p className="checkout-delivery-address">
-                  Add your delivery address in profile to see it here. Your order will be shipped
-                  after you place it.
-                </p>
-                <Link href="/profile" className="checkout-delivery-change" style={{ marginTop: '0.5rem', display: 'inline-block' }}>
-                  Change
-                </Link>
-              </div>
+              <CheckoutAddressSelect
+                addresses={addresses}
+                selectedAddressId={selectedAddressId}
+                buyNowProductId={buyNowProductId || null}
+                userEmail={user.email ?? ''}
+                userName={userName}
+              />
 
               {checkoutItems.map((item) => {
                 const product = item.products
@@ -156,6 +156,7 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
                 total={total}
                 itemCount={checkoutItems.length}
                 buyNowProductId={buyNowProductId || null}
+                addressId={selectedAddressId}
               />
             </div>
           </div>

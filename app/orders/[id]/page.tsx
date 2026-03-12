@@ -15,12 +15,18 @@ export default async function OrderPage({ params, searchParams }: OrderPageProps
   const supabase = await createClient()
   const { data: order, error: orderError } = await supabase
     .from('orders')
-    .select('id, total_price, status, payment_status, created_at')
+    .select('id, total_price, status, payment_status, created_at, address_id')
     .eq('id', params.id)
     .eq('user_id', user.id)
     .single()
 
   if (orderError || !order) notFound()
+
+  let deliveryAddress: { address_line: string; city: string; state: string; postal_code: string; country: string } | null = null
+  if (order.address_id) {
+    const { data: addr } = await supabase.from('addresses').select('address_line, city, state, postal_code, country').eq('id', order.address_id).single()
+    if (addr) deliveryAddress = addr
+  }
 
   const { data: orderItems } = await supabase
     .from('order_items')
@@ -76,6 +82,17 @@ export default async function OrderPage({ params, searchParams }: OrderPageProps
         Placed on {new Date(order.created_at).toLocaleString()} · Status: {order.status} ·
         Payment: {order.payment_status}
       </p>
+
+      {deliveryAddress && (
+        <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+          <h3 style={{ fontSize: '0.9rem', marginBottom: '0.35rem' }}>Delivery address</h3>
+          <p style={{ margin: 0, fontSize: '0.9rem', color: '#374151' }}>
+            {deliveryAddress.address_line}, {deliveryAddress.city}
+            {deliveryAddress.state && `, ${deliveryAddress.state}`} {deliveryAddress.postal_code}
+            {deliveryAddress.country && `, ${deliveryAddress.country}`}
+          </p>
+        </div>
+      )}
 
       <div
         style={{
