@@ -21,6 +21,9 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
       price,
       stock_quantity,
       image_url,
+      brand,
+      color,
+      size,
       created_at,
       categories (
         id,
@@ -105,6 +108,15 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
             {product.description || 'No description provided.'}
           </p>
 
+          <p style={{ marginBottom: '0.5rem' }}>
+            <strong>Brand:</strong> {product.brand || 'N/A'}
+          </p>
+          <p style={{ marginBottom: '0.5rem' }}>
+            <strong>Color:</strong> {product.color || 'N/A'}
+          </p>
+          <p style={{ marginBottom: '0.5rem' }}>
+            <strong>Size:</strong> {product.size || 'N/A'}
+          </p>
           <p style={{ marginBottom: '0.5rem' }}>
             <strong>Stock:</strong> {product.stock_quantity}
           </p>

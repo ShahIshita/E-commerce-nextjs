@@ -129,7 +129,7 @@ export default function Home() {
           color: '#1f2937',
           marginBottom: '1rem'
         }}>
-          Welcome to E-commerce Site
+          Welcome to NexCart store
         </h1>
         <p style={{ 
           fontSize: '1.2rem', 
@@ -165,7 +165,7 @@ export default function Home() {
           marginBottom: '0.5rem',
           textAlign: 'center'
         }}>
-          Welcome to E-commerce Site
+          Welcome to NexCart store
         </h1>
         <p style={{ 
           textAlign: 'center', 
