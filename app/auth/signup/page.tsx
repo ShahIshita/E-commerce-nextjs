@@ -61,7 +61,7 @@ export default function SignupPage() {
     }
 
     // Client-side sign-up auto-logs in and triggers onAuthStateChange immediately
-    router.push('/')
+    router.push('/products')
   }
 
   return (

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabaseServer'
+import ProductDetailClient from './ProductDetailClient'
 
 type ProductDetailPageProps = {
   params: {
@@ -123,6 +124,14 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
           <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>
             Added: {new Date(product.created_at).toLocaleDateString()}
           </p>
+
+          <ProductDetailClient
+            productId={product.id}
+            productName={product.name}
+            stockQuantity={product.stock_quantity}
+            categoryName={categoryName}
+            sizeValue={product.size}
+          />
         </div>
       </div>
     </div>

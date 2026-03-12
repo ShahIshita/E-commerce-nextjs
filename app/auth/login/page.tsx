@@ -42,7 +42,7 @@ export default function LoginPage() {
 
     // Client-side sign-in triggers onAuthStateChange immediately - navbar updates without delay
     // Use router.push for client-side navigation (no full page reload)
-    router.push('/')
+    router.push('/products')
   }
 
   return (

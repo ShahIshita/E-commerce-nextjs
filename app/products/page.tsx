@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabaseServer'
 import PriceRangeSlider from '@/components/products/PriceRangeSlider'
 import ProductCard from '@/components/products/ProductCard'
+import LoadingSubmitButton from '@/components/products/LoadingSubmitButton'
+import ClearFiltersButton from '@/components/products/ClearFiltersButton'
 
 type ProductsPageProps = {
   searchParams?: Record<string, string | string[] | undefined>
@@ -61,7 +63,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     .map((p) => Number(p.price))
     .filter((price) => Number.isFinite(price))
   const minAvailablePrice = prices.length > 0 ? Math.floor(Math.min(...prices)) : 0
-  const maxAvailablePrice = prices.length > 0 ? Math.ceil(Math.max(...prices)) : 1000
+  const maxAvailablePrice = prices.length > 0 ? Math.ceil(Math.max(...prices)) : 100000
 
   let productsQuery = supabase
     .from('products')
@@ -144,8 +146,9 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
           placeholder="Search products, brands and more"
           style={{ padding: '0.6rem', border: '1px solid #d1d5db', borderRadius: '6px' }}
         />
-        <button
-          type="submit"
+        <LoadingSubmitButton
+          idleText="Search"
+          loadingText="Searching..."
           style={{
             padding: '0.6rem 1rem',
             border: 'none',
@@ -154,9 +157,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             color: '#fff',
             cursor: 'pointer',
           }}
-        >
-          Search
-        </button>
+        />
       </form>
 
       <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -258,8 +259,9 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             </details>
 
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-              <button
-                type="submit"
+              <LoadingSubmitButton
+                idleText="Apply"
+                loadingText="Applying..."
                 style={{
                   flex: 1,
                   padding: '0.5rem',
@@ -269,23 +271,8 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                   color: '#fff',
                   cursor: 'pointer',
                 }}
-              >
-                Apply
-              </button>
-              <Link
-                href={clearHref}
-                style={{
-                  flex: 1,
-                  padding: '0.5rem',
-                  textAlign: 'center',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  color: '#374151',
-                  textDecoration: 'none',
-                }}
-              >
-                Clear
-              </Link>
+              />
+              <ClearFiltersButton href={clearHref} />
             </div>
           </form>
         </aside>

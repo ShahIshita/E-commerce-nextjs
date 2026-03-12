@@ -21,7 +21,11 @@ export default function Home() {
     
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
+      const nextUser = session?.user ?? null
+      setUser(nextUser)
+      if (nextUser) {
+        router.replace('/products')
+      }
       setLoading(false)
     })
 
@@ -29,14 +33,16 @@ export default function Home() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-      if (session?.user) {
+      const nextUser = session?.user ?? null
+      setUser(nextUser)
+      if (nextUser) {
+        router.replace('/products')
         setShowLogin(false)
       }
     })
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [router])
 
   async function handleSignup(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -118,26 +124,12 @@ export default function Home() {
   if (user) {
     return (
       <div style={{ 
-        maxWidth: '1200px', 
-        margin: '0 auto', 
-        padding: '3rem 2rem',
-        textAlign: 'center'
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '60vh'
       }}>
-        <h1 style={{ 
-          fontSize: '2.5rem', 
-          fontWeight: 'bold', 
-          color: '#1f2937',
-          marginBottom: '1rem'
-        }}>
-          Welcome to NexCart store
-        </h1>
-        <p style={{ 
-          fontSize: '1.2rem', 
-          color: '#6b7280',
-          marginBottom: '2rem'
-        }}>
-          You're successfully logged in! Browse our products to get started.
-        </p>
+        <div style={{ fontSize: '1.1rem', color: '#6b7280' }}>Redirecting to products...</div>
       </div>
     )
   }

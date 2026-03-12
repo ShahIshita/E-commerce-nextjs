@@ -1,8 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { Heart } from 'lucide-react'
+import { useState } from 'react'
+import { Heart, ShoppingCart } from 'lucide-react'
 import { useWishlist } from '@/components/WishlistProvider'
+import { addProductToCart } from '@/lib/cartClient'
+import { ButtonLoader } from '@/components/ui/ButtonLoader'
 
 type ProductCardProps = {
   product: {
@@ -20,6 +23,7 @@ type ProductCardProps = {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const { isInWishlist, toggleWishlist } = useWishlist()
+  const [addingToCart, setAddingToCart] = useState(false)
   const liked = isInWishlist(product.id)
 
   return (
@@ -88,6 +92,47 @@ export default function ProductCard({ product }: ProductCardProps) {
       </p>
       <p style={{ fontWeight: 600, marginBottom: '0.25rem' }}>${Number(product.price).toFixed(2)}</p>
       <p style={{ fontSize: '0.85rem', color: '#4b5563' }}>Stock: {product.stock_quantity}</p>
+
+      <button
+        type="button"
+        onClick={async (e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          if (addingToCart || product.stock_quantity <= 0) return
+
+          setAddingToCart(true)
+          const result = await addProductToCart(product.id, 1)
+          setAddingToCart(false)
+
+          if ('error' in result && result.error === 'AUTH_REQUIRED') {
+            window.location.href = '/auth/login'
+            return
+          }
+          if ('error' in result && result.error) {
+            alert(result.error)
+            return
+          }
+        }}
+        disabled={addingToCart || product.stock_quantity <= 0}
+        style={{
+          marginTop: '0.6rem',
+          width: '100%',
+          border: 'none',
+          borderRadius: '8px',
+          backgroundColor: product.stock_quantity <= 0 ? '#9ca3af' : '#111827',
+          color: '#fff',
+          padding: '0.55rem',
+          cursor: addingToCart || product.stock_quantity <= 0 ? 'not-allowed' : 'pointer',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '0.5rem',
+          opacity: addingToCart ? 0.8 : 1,
+        }}
+      >
+        {addingToCart ? <ButtonLoader /> : <ShoppingCart size={16} />}
+        {product.stock_quantity <= 0 ? 'Out of stock' : addingToCart ? 'Adding...' : 'Add to Cart'}
+      </button>
     </Link>
   )
 }
