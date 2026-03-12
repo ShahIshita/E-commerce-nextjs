@@ -2,6 +2,7 @@ import { getUser } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabaseServer'
+import CheckoutSummary from './CheckoutSummary'
 
 type CheckoutPageProps = {
   searchParams?: Record<string, string | string[] | undefined>
@@ -63,94 +64,103 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
     0
   )
 
+  const userName = user.email?.split('@')[0] ?? 'Customer'
+  const deliveryBy = new Date()
+  deliveryBy.setDate(deliveryBy.getDate() + 5)
+
   return (
-    <div style={{ padding: '2rem', maxWidth: '1000px', margin: '0 auto' }}>
-      <h1>Checkout</h1>
-      <p style={{ color: '#6b7280', marginBottom: '1rem' }}>Welcome, {user.email}</p>
+    <div className="checkout-page-wrap">
+      <div className="checkout-page-inner">
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.25rem', color: '#111827' }}>
+          Checkout
+        </h1>
+        <p style={{ color: '#6b7280', marginBottom: '1.25rem', fontSize: '0.9rem' }}>
+          Review your order and place it securely.
+        </p>
 
-      {checkoutItems.length === 0 && (
-        <div style={{ border: '1px solid #e5e7eb', borderRadius: '8px', backgroundColor: '#fff', padding: '1rem' }}>
-          <p style={{ marginBottom: '0.6rem' }}>No items in cart for checkout.</p>
-          <Link href="/products" style={{ color: '#2563eb', textDecoration: 'underline' }}>
-            Continue shopping
-          </Link>
-        </div>
-      )}
-
-      {checkoutItems.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '1rem' }}>
-          <div style={{ display: 'grid', gap: '0.75rem' }}>
-            {checkoutItems.map((item) => {
-              const product = item.products
-              return (
-                <div
-                  key={item.id}
-                  style={{
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '10px',
-                    backgroundColor: '#fff',
-                    padding: '0.85rem',
-                    display: 'grid',
-                    gridTemplateColumns: '90px 1fr',
-                    gap: '0.85rem',
-                    alignItems: 'center',
-                  }}
-                >
-                  <img
-                    src={product?.image_url || 'https://via.placeholder.com/200x150?text=No+Image'}
-                    alt={product?.name || 'Product'}
-                    style={{ width: '90px', height: '90px', objectFit: 'cover', borderRadius: '8px' }}
-                  />
-                  <div>
-                    <h3 style={{ marginBottom: '0.25rem', fontSize: '1rem' }}>
-                      {product?.name || 'Unavailable Product'}
-                    </h3>
-                    <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>
-                      ${Number(product?.price ?? 0).toFixed(2)} x {item.quantity}
-                    </p>
-                    {item.selected_size && (
-                      <p style={{ color: '#374151', fontSize: '0.85rem' }}>
-                        Size: <strong>{item.selected_size}</strong>
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-
+        {checkoutItems.length === 0 && (
           <div
             style={{
               border: '1px solid #e5e7eb',
-              borderRadius: '10px',
+              borderRadius: '8px',
               backgroundColor: '#fff',
-              padding: '1rem',
-              alignSelf: 'start',
+              padding: '1.5rem',
             }}
           >
-            <h3 style={{ marginBottom: '0.8rem' }}>Payment Summary</h3>
-            <p style={{ marginBottom: '0.5rem' }}>Items: {checkoutItems.length}</p>
-            <p style={{ marginBottom: '0.8rem' }}>
-              Total: <strong>${total.toFixed(2)}</strong>
-            </p>
-            <button
-              type="button"
-              style={{
-                width: '100%',
-                border: 'none',
-                borderRadius: '8px',
-                backgroundColor: '#16a34a',
-                color: '#fff',
-                padding: '0.65rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-              }}
-            >
-              Place Order
-            </button>
+            <p style={{ marginBottom: '0.6rem' }}>No items in cart for checkout.</p>
+            <Link href="/products" style={{ color: '#2563eb', textDecoration: 'underline' }}>
+              Continue shopping
+            </Link>
           </div>
-        </div>
-      )}
+        )}
+
+        {checkoutItems.length > 0 && (
+          <div className="checkout-layout-new">
+            <div className="checkout-left">
+              <div className="checkout-delivery-card">
+                <h3>Deliver to</h3>
+                <div className="checkout-delivery-row">
+                  <span className="checkout-delivery-name">
+                    {userName}
+                    <span style={{ marginLeft: '0.5rem', color: '#6b7280', fontWeight: 400 }}>
+                      {user.email}
+                    </span>
+                  </span>
+                  <span className="checkout-delivery-tag">HOME</span>
+                </div>
+                <p className="checkout-delivery-address">
+                  Add your delivery address in profile to see it here. Your order will be shipped
+                  after you place it.
+                </p>
+                <Link href="/profile" className="checkout-delivery-change" style={{ marginTop: '0.5rem', display: 'inline-block' }}>
+                  Change
+                </Link>
+              </div>
+
+              {checkoutItems.map((item) => {
+                const product = item.products
+                const lineTotal = Number(product?.price ?? 0) * item.quantity
+                return (
+                  <div key={item.id} className="checkout-item-card-new">
+                    <img
+                      src={product?.image_url || 'https://via.placeholder.com/200x150?text=No+Image'}
+                      alt={product?.name || 'Product'}
+                    />
+                    <div>
+                      <p className="checkout-item-name">{product?.name || 'Unavailable Product'}</p>
+                      {item.selected_size && (
+                        <p className="checkout-item-meta">Size: {item.selected_size}</p>
+                      )}
+                      <p className="checkout-item-price-row">
+                        ${Number(product?.price ?? 0).toFixed(2)} × {item.quantity}
+                        <strong style={{ marginLeft: '0.5rem' }}>${lineTotal.toFixed(2)}</strong>
+                      </p>
+                      <p className="checkout-item-delivery">
+                        Delivery by {deliveryBy.toLocaleDateString('en-US', {
+                          weekday: 'short',
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </p>
+                      <div className="checkout-item-actions">
+                        <Link href="/cart">Remove</Link>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="checkout-sidebar">
+              <CheckoutSummary
+                total={total}
+                itemCount={checkoutItems.length}
+                buyNowProductId={buyNowProductId || null}
+              />
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
