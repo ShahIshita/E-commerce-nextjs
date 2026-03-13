@@ -1,13 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/supabaseBrowser'
 import { ButtonLoader } from '@/components/ui/ButtonLoader'
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get('redirectTo') || '/products'
+
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -40,9 +44,8 @@ export default function LoginPage() {
       return
     }
 
-    // Client-side sign-in triggers onAuthStateChange immediately - navbar updates without delay
-    // Use router.push for client-side navigation (no full page reload)
-    router.push('/products')
+    // After login, redirect back to the page the user was trying to access
+    router.push(redirectTo)
   }
 
   return (
@@ -152,5 +155,13 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div style={{ textAlign: 'center', marginTop: '2rem' }}>Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   )
 }
