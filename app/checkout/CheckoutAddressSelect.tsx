@@ -35,8 +35,10 @@ export default function CheckoutAddressSelect({
       onAddressSelect={handleAddressSelect}
       userName={userName}
       userEmail={userEmail}
-      onAddressAdded={(newAddr) => {
-        handleAddressSelect(newAddr.id)
+      onAddressAdded={(newList) => {
+        if(newList.length > 0) {
+           handleAddressSelect(newList[0].id)
+        }
         router.refresh()
       }}
     />

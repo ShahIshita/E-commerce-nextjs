@@ -12,6 +12,7 @@ export type Address = {
   state: string
   postal_code: string
   country: string
+  phone_number?: string | null
   is_default: boolean
 }
 
@@ -21,6 +22,7 @@ const emptyForm = {
   state: '',
   postal_code: '',
   country: '',
+  phone_number: '',
 }
 
 export default function AddressSection({ userId }: { userId: string }) {
@@ -40,7 +42,7 @@ export default function AddressSection({ userId }: { userId: string }) {
   const loadAddresses = useCallback(async () => {
     const { data, error } = await supabase
       .from('addresses')
-      .select('id, address_line, city, state, postal_code, country, is_default')
+      .select('id, address_line, city, state, postal_code, country, phone_number, is_default')
       .eq('user_id', userId)
       .order('is_default', { ascending: false })
 
@@ -66,6 +68,7 @@ export default function AddressSection({ userId }: { userId: string }) {
       state: a.state || '',
       postal_code: a.postcode || '',
       country: a.country || '',
+      phone_number: '',
     }
   }
 
@@ -106,6 +109,7 @@ export default function AddressSection({ userId }: { userId: string }) {
       state: form.state.trim(),
       postal_code: form.postal_code.trim(),
       country: form.country.trim() || 'India',
+      phone_number: form.phone_number?.trim() || null,
       is_default: addresses.length === 0,
     }
     if (!payload.address_line || !payload.city) {
@@ -238,15 +242,25 @@ export default function AddressSection({ userId }: { userId: string }) {
         >
           <h3 style={{ marginBottom: '0.75rem', fontSize: '1rem' }}>New address</h3>
           <div style={{ display: 'grid', gap: '0.75rem' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: '500', fontSize: '0.875rem' }}>Address line</label>
-              <input
-                value={form.address_line}
-                onChange={(e) => setForm((f) => ({ ...f, address_line: e.target.value }))}
-                required
-                style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '6px' }}
-                placeholder="Street, building, landmark"
-              />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: '500', fontSize: '0.875rem' }}>Phone Number <span style={{color: '#6b7280'}}>(new)</span></label>
+                <input
+                  value={form.phone_number || ''}
+                  onChange={(e) => setForm((f) => ({ ...f, phone_number: e.target.value }))}
+                  style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: '500', fontSize: '0.875rem' }}>Address line</label>
+                <input
+                  value={form.address_line}
+                  onChange={(e) => setForm((f) => ({ ...f, address_line: e.target.value }))}
+                  required
+                  style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                  placeholder="Street, building, landmark"
+                />
+              </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
               <div>
@@ -340,7 +354,10 @@ export default function AddressSection({ userId }: { userId: string }) {
             </div>
             {editingId === addr.id ? (
               <form onSubmit={(e) => handleSubmit(e, addr.id)} style={{ display: 'grid', gap: '0.5rem' }}>
-                <input value={form.address_line} onChange={(e) => setForm((f) => ({ ...f, address_line: e.target.value }))} required placeholder="Address line" style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '6px' }} />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                  <input value={form.phone_number || ''} onChange={(e) => setForm((f) => ({ ...f, phone_number: e.target.value }))} placeholder="Phone number" style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '6px' }} />
+                  <input value={form.address_line} onChange={(e) => setForm((f) => ({ ...f, address_line: e.target.value }))} required placeholder="Address line" style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '6px' }} />
+                </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                   <input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} required placeholder="City" style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '6px' }} />
                   <input value={form.state} onChange={(e) => setForm((f) => ({ ...f, state: e.target.value }))} placeholder="State" style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '6px' }} />
@@ -357,11 +374,12 @@ export default function AddressSection({ userId }: { userId: string }) {
             ) : (
               <>
                 <p style={{ margin: 0, fontWeight: 500 }}>{addr.address_line}</p>
+                {addr.phone_number && <p style={{ margin: '0 0 0.25rem 0', fontSize: '0.875rem', fontWeight: 500 }}>Phone: {addr.phone_number}</p>}
                 <p style={{ margin: '0.25rem 0 0', fontSize: '0.875rem', color: '#6b7280' }}>
                   {[addr.city, addr.state, addr.postal_code, addr.country].filter(Boolean).join(', ')}
                 </p>
                 <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem' }}>
-                  <button type="button" onClick={() => { setEditingId(addr.id); setForm({ address_line: addr.address_line, city: addr.city, state: addr.state, postal_code: addr.postal_code, country: addr.country }); }} style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem', border: '1px solid #d1d5db', borderRadius: '6px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                  <button type="button" onClick={() => { setEditingId(addr.id); setForm({ address_line: addr.address_line, city: addr.city, state: addr.state, postal_code: addr.postal_code, country: addr.country, phone_number: addr.phone_number || '' }); }} style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem', border: '1px solid #d1d5db', borderRadius: '6px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
                     <Pencil size={14} /> Edit
                   </button>
                   {!addr.is_default && (

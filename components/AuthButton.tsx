@@ -179,36 +179,6 @@ export default function AuthButton({ minimal = false }: AuthButtonProps) {
           </span>
         </Link>
 
-        {/* Logout Button */}
-        <button
-          type="button"
-          onClick={handleLogout}
-          disabled={isLoggingOut}
-          style={{
-            padding: '0.5rem 1rem',
-            backgroundColor: isLoggingOut ? '#9ca3af' : '#ef4444',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: isLoggingOut ? 'not-allowed' : 'pointer',
-            fontWeight: '500',
-            fontSize: '0.875rem',
-            transition: 'background-color 0.2s',
-            opacity: isLoggingOut ? 0.7 : 1
-          }}
-          onMouseEnter={(e) => {
-            if (!isLoggingOut) {
-              e.currentTarget.style.backgroundColor = '#dc2626'
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!isLoggingOut) {
-              e.currentTarget.style.backgroundColor = '#ef4444'
-            }
-          }}
-        >
-          {isLoggingOut ? 'Logging out...' : 'Logout'}
-        </button>
       </div>
     )
   }

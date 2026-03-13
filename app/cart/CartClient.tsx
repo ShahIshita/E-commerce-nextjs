@@ -39,7 +39,7 @@ type NormalizedCartItemRow = {
   } | null
 }
 
-type AddressOption = { id: string; address_line: string; city: string; state: string; postal_code: string; country: string; is_default: boolean }
+type AddressOption = { id: string; address_line: string; city: string; state: string; postal_code: string; country: string; phone_number?: string; is_default: boolean }
 
 type CartClientProps = {
   userId: string
@@ -54,6 +54,7 @@ export default function CartClient({ userId }: CartClientProps) {
   const [userName, setUserName] = useState('')
   const [loading, setLoading] = useState(true)
   const [busyItemId, setBusyItemId] = useState<string | null>(null)
+  const [detailModalProduct, setDetailModalProduct] = useState<any>(null)
 
   const supabase = createSupabaseBrowserClient()
   const { isInWishlist, toggleWishlist } = useWishlist()
@@ -148,7 +149,7 @@ export default function CartClient({ userId }: CartClientProps) {
   const loadAddresses = useCallback(async () => {
     const { data } = await supabase
       .from('addresses')
-      .select('id, address_line, city, state, postal_code, country, is_default')
+      .select('id, address_line, city, state, postal_code, country, phone_number, is_default')
       .eq('user_id', userId)
       .order('is_default', { ascending: false })
     const list = (data ?? []) as AddressOption[]
@@ -227,6 +228,12 @@ export default function CartClient({ userId }: CartClientProps) {
     )
   }
 
+  const deliveryBy = new Date()
+  deliveryBy.setDate(deliveryBy.getDate() + 5)
+  const formattedDelivery = deliveryBy.toLocaleDateString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric',
+  })
+
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '1rem' }}>
       <div style={{ display: 'grid', gap: '0.75rem', alignContent: 'start' }}>
@@ -236,7 +243,7 @@ export default function CartClient({ userId }: CartClientProps) {
           onAddressSelect={setSelectedAddressId}
           userEmail={userEmail}
           userName={userName}
-          onAddressAdded={(addr) => setAddresses((prev) => [addr, ...prev])}
+          onAddressAdded={setAddresses}
         />
 
         {items.map((item) => {
@@ -268,7 +275,8 @@ export default function CartClient({ userId }: CartClientProps) {
                   <img
                     src={product?.image_url || 'https://via.placeholder.com/200x150?text=No+Image'}
                     alt={product?.name || 'Product'}
-                    style={{ width: '100px', height: '100px', objectFit: 'contain', borderRadius: '4px' }}
+                    onClick={() => product && setDetailModalProduct(product)}
+                    style={{ width: '100px', height: '100px', objectFit: 'contain', borderRadius: '4px', cursor: 'pointer' }}
                   />
                   
                   {/* Quantity controls */}
@@ -318,15 +326,15 @@ export default function CartClient({ userId }: CartClientProps) {
                 </div>
 
                 <div style={{ flex: 1, paddingTop: '0.25rem' }}>
-                  <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: 500 }}>
-                    {product?.id ? (
-                      <Link href={`/products/${product.id}`} style={{ color: '#111827', textDecoration: 'none' }}>
-                        {product?.name || 'Unavailable Product'}
-                      </Link>
-                    ) : (
-                      product?.name || 'Unavailable Product'
-                    )}
+                  <h3 
+                    onClick={() => product && setDetailModalProduct(product)}
+                    style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: 500, cursor: 'pointer', color: '#111827' }}
+                  >
+                    {product?.name || 'Unavailable Product'}
                   </h3>
+                  <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', color: '#374151', fontWeight: 500 }}>
+                    Delivery by {formattedDelivery}
+                  </p>
                   {item.selected_size && (
                     <p style={{ color: '#6b7280', fontSize: '0.85rem', marginBottom: '0.5rem' }}>
                       Size: {item.selected_size}
@@ -465,6 +473,69 @@ export default function CartClient({ userId }: CartClientProps) {
           Buy Now
         </Link>
       </div>
+
+      {detailModalProduct && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: '#fff',
+            borderRadius: '12px',
+            width: '100%',
+            maxWidth: '450px',
+            padding: '1.5rem',
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '-1rem' }}>
+              <button 
+                onClick={() => setDetailModalProduct(null)}
+                style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#6b7280' }}
+              >
+                &times;
+              </button>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', justifyContent: 'center' }}>
+              <div style={{ flex: 1, border: '1px solid #e5e7eb', padding: '0.5rem', borderRadius: '8px', maxWidth: '200px' }}>
+                <img 
+                  src={detailModalProduct.image_url || 'https://via.placeholder.com/200x150?text=No+Image'} 
+                  style={{ width: '100%', height: 'auto', objectFit: 'contain', maxHeight: '300px' }} 
+                />
+              </div>
+            </div>
+
+            <h2 style={{ margin: '0 0 1.5rem 0', fontSize: '1.15rem', fontWeight: 400, color: '#111827', textAlign: 'center' }}>
+              {detailModalProduct.name}
+            </h2>
+            
+            <Link 
+              href={`/products/${detailModalProduct.id}`}
+              style={{
+                display: 'block',
+                width: '100%',
+                padding: '0.75rem',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                textAlign: 'center',
+                color: '#2563eb',
+                textDecoration: 'none',
+                fontWeight: 500,
+                transition: 'background-color 0.2s',
+              }}
+              onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#f9fafb')}
+              onMouseOut={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+            >
+              More Details
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

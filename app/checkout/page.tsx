@@ -60,10 +60,10 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
 
   const { data: addressesData } = await supabase
     .from('addresses')
-    .select('id, address_line, city, state, postal_code, country, is_default')
+    .select('id, address_line, city, state, postal_code, country, phone_number, is_default')
     .eq('user_id', user.id)
     .order('is_default', { ascending: false })
-  type AddressRow = { id: string; address_line: string; city: string; state: string; postal_code: string; country: string; is_default: boolean }
+  type AddressRow = { id: string; address_line: string; city: string; state: string; postal_code: string; country: string; phone_number?: string; is_default: boolean }
   const addresses = (addressesData ?? []) as AddressRow[]
   const selectedAddressId = addressIdParam && addresses.some((a) => a.id === addressIdParam) ? addressIdParam : (addresses.find((a) => a.is_default)?.id ?? addresses[0]?.id ?? null)
 
