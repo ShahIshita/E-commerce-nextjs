@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { createSupabaseBrowserClient } from '@/lib/supabaseBrowser'
 import { ButtonLoader } from '@/components/ui/ButtonLoader'
+import { useWishlist } from '@/components/WishlistProvider'
+import DeliveryAddressSelector from '@/components/checkout/DeliveryAddressSelector'
 
 type CartItemRow = {
   id: string
@@ -48,10 +50,25 @@ export default function CartClient({ userId }: CartClientProps) {
   const [items, setItems] = useState<NormalizedCartItemRow[]>([])
   const [addresses, setAddresses] = useState<AddressOption[]>([])
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
+  const [userEmail, setUserEmail] = useState('')
+  const [userName, setUserName] = useState('')
   const [loading, setLoading] = useState(true)
   const [busyItemId, setBusyItemId] = useState<string | null>(null)
 
   const supabase = createSupabaseBrowserClient()
+  const { isInWishlist, toggleWishlist } = useWishlist()
+
+  useEffect(() => {
+    async function loadUser() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setUserEmail(user.email || '')
+        const { data: profile } = await supabase.from('profiles').select('name').eq('id', user.id).maybeSingle()
+        setUserName(profile?.name || user.email?.split('@')[0] || 'Customer')
+      }
+    }
+    loadUser()
+  }, [supabase])
 
   const loadCart = useCallback(async () => {
     setLoading(true)
@@ -212,116 +229,198 @@ export default function CartClient({ userId }: CartClientProps) {
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '1rem' }}>
-      <div style={{ display: 'grid', gap: '0.75rem' }}>
+      <div style={{ display: 'grid', gap: '0.75rem', alignContent: 'start' }}>
+        <DeliveryAddressSelector
+          addresses={addresses}
+          selectedAddressId={selectedAddressId}
+          onAddressSelect={setSelectedAddressId}
+          userEmail={userEmail}
+          userName={userName}
+          onAddressAdded={(addr) => setAddresses((prev) => [addr, ...prev])}
+        />
+
         {items.map((item) => {
           const product = item.products
           const isBusy = busyItemId === item.id
           const price = Number(product?.price ?? 0)
+          const inWishlist = product?.id ? isInWishlist(product.id) : false
+
+          const handleSaveForLater = async () => {
+            if (product?.id && !inWishlist) {
+              await toggleWishlist(product.id)
+            }
+          }
 
           return (
             <div
               key={item.id}
               style={{
                 border: '1px solid #e5e7eb',
-                borderRadius: '10px',
+                borderRadius: '8px',
                 backgroundColor: '#fff',
-                padding: '0.85rem',
-                display: 'grid',
-                gridTemplateColumns: '90px 1fr auto',
-                gap: '0.85rem',
-                alignItems: 'center',
+                display: 'flex',
+                flexDirection: 'column',
               }}
             >
-              <img
-                src={product?.image_url || 'https://via.placeholder.com/200x150?text=No+Image'}
-                alt={product?.name || 'Product'}
-                style={{ width: '90px', height: '90px', objectFit: 'cover', borderRadius: '8px' }}
-              />
-              <div>
-                <h3 style={{ marginBottom: '0.25rem', fontSize: '1rem' }}>
-                  {product?.id ? (
-                    <Link href={`/products/${product.id}`} style={{ color: '#111827', textDecoration: 'none' }}>
-                      {product?.name || 'Unavailable Product'}
-                    </Link>
-                  ) : (
-                    product?.name || 'Unavailable Product'
-                  )}
-                </h3>
-                <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>${price.toFixed(2)} each</p>
-                {item.selected_size && (
-                  <p style={{ color: '#374151', fontSize: '0.85rem' }}>
-                    Size: <strong>{item.selected_size}</strong>
-                  </p>
-                )}
-                {product?.id && (
-                  <Link
-                    href={`/products/${product.id}`}
-                    style={{ fontSize: '0.85rem', color: '#2563eb', textDecoration: 'underline' }}
-                  >
-                    View product details
-                  </Link>
-                )}
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div
-                  style={{
-                    display: 'inline-flex',
-                    gap: '0.4rem',
-                    alignItems: 'center',
-                    marginBottom: '0.5rem',
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                    disabled={isBusy || item.quantity <= 1}
+              {/* Top part: Image and Details */}
+              <div style={{ padding: '1rem', display: 'flex', gap: '1rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', width: '110px' }}>
+                  <img
+                    src={product?.image_url || 'https://via.placeholder.com/200x150?text=No+Image'}
+                    alt={product?.name || 'Product'}
+                    style={{ width: '100px', height: '100px', objectFit: 'contain', borderRadius: '4px' }}
+                  />
+                  
+                  {/* Quantity controls */}
+                  <div
                     style={{
-                      width: '28px',
-                      height: '28px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
                       border: '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      backgroundColor: '#fff',
-                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      overflow: 'hidden',
                     }}
                   >
-                    -
-                  </button>
-                  <span style={{ minWidth: '22px', textAlign: 'center' }}>{item.quantity}</span>
-                  <button
-                    type="button"
-                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                    disabled={isBusy}
-                    style={{
-                      width: '28px',
-                      height: '28px',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      backgroundColor: '#fff',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    +
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                      disabled={isBusy || item.quantity <= 1}
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        backgroundColor: '#f9fafb',
+                        border: 'none',
+                        borderRight: '1px solid #d1d5db',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                      }}
+                    >
+                      -
+                    </button>
+                    <span style={{ minWidth: '32px', textAlign: 'center', fontSize: '0.9rem', backgroundColor: '#fff' }}>{item.quantity}</span>
+                    <button
+                      type="button"
+                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                      disabled={isBusy}
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        backgroundColor: '#f9fafb',
+                        border: 'none',
+                        borderLeft: '1px solid #d1d5db',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                      }}
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
+
+                <div style={{ flex: 1, paddingTop: '0.25rem' }}>
+                  <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: 500 }}>
+                    {product?.id ? (
+                      <Link href={`/products/${product.id}`} style={{ color: '#111827', textDecoration: 'none' }}>
+                        {product?.name || 'Unavailable Product'}
+                      </Link>
+                    ) : (
+                      product?.name || 'Unavailable Product'
+                    )}
+                  </h3>
+                  {item.selected_size && (
+                    <p style={{ color: '#6b7280', fontSize: '0.85rem', marginBottom: '0.5rem' }}>
+                      Size: {item.selected_size}
+                    </p>
+                  )}
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.75rem' }}>
+                    <span style={{ fontSize: '1.25rem', fontWeight: 600, color: '#111827' }}>
+                      ${(price * item.quantity).toFixed(2)}
+                    </span>
+                    <span style={{ fontSize: '0.9rem', color: '#16a34a', fontWeight: 500 }}>
+                      Available offers applied
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom part: Action buttons row */}
+              <div 
+                style={{ 
+                  display: 'flex', 
+                  borderTop: '1px solid #e5e7eb',
+                }}
+              >
                 <button
-                  type="button"
+                  onClick={handleSaveForLater}
+                  disabled={inWishlist}
+                  style={{
+                    flex: 1,
+                    padding: '0.75rem',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    borderRight: '1px solid #e5e7eb',
+                    cursor: inWishlist ? 'default' : 'pointer',
+                    fontWeight: 500,
+                    color: inWishlist ? '#9ca3af' : '#374151',
+                    fontSize: '0.9rem',
+                    transition: 'background-color 0.2s',
+                  }}
+                  onMouseOver={(e) => !inWishlist && (e.currentTarget.style.backgroundColor = '#f9fafb')}
+                  onMouseOut={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                >
+                  {inWishlist ? 'Saved in Wishlist' : 'Save for later'}
+                </button>
+                
+                <button
                   onClick={() => removeItem(item.id)}
                   disabled={isBusy}
                   style={{
+                    flex: 1,
+                    padding: '0.75rem',
+                    backgroundColor: 'transparent',
                     border: 'none',
-                    borderRadius: '6px',
-                    backgroundColor: '#ef4444',
-                    color: '#fff',
-                    padding: '0.45rem 0.7rem',
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.4rem',
+                    borderRight: '1px solid #e5e7eb',
+                    cursor: isBusy ? 'wait' : 'pointer',
+                    fontWeight: 500,
+                    color: '#374151',
+                    fontSize: '0.9rem',
+                    transition: 'background-color 0.2s',
                   }}
+                  onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#f9fafb')}
+                  onMouseOut={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                 >
                   {isBusy && <ButtonLoader />}
                   Remove
                 </button>
+
+                {product?.id ? (
+                  <Link
+                    href={`/checkout?buyNow=${product.id}${selectedAddressId ? `&addressId=${encodeURIComponent(selectedAddressId)}` : ''}`}
+                    style={{
+                      flex: 1,
+                      padding: '0.75rem',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontWeight: 500,
+                      color: '#2563eb',
+                      fontSize: '0.9rem',
+                      textAlign: 'center',
+                      textDecoration: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'background-color 0.2s',
+                    }}
+                    onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#f9fafb')}
+                    onMouseOut={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                  >
+                    Buy this now
+                  </Link>
+                ) : (
+                  <div style={{ flex: 1 }}></div>
+                )}
               </div>
             </div>
           )
@@ -338,30 +437,8 @@ export default function CartClient({ userId }: CartClientProps) {
         }}
       >
         <h3 style={{ marginBottom: '0.8rem' }}>Order Summary</h3>
-        {addresses.length > 0 && (
-          <div style={{ marginBottom: '0.75rem' }}>
-            <label htmlFor="cart-address-select" style={{ display: 'block', fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.25rem' }}>Deliver to</label>
-            <select
-              id="cart-address-select"
-              value={selectedAddressId ?? ''}
-              onChange={(e) => setSelectedAddressId(e.target.value || null)}
-              style={{
-                width: '100%',
-                padding: '0.5rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                fontSize: '0.9rem',
-              }}
-            >
-              {addresses.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.address_line}, {a.city}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-        {addresses.length === 0 && (
+
+        {!addresses.length && (
           <p style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '0.5rem' }}>
             <Link href="/profile" style={{ color: '#2563eb' }}>Add address</Link> for checkout.
           </p>
